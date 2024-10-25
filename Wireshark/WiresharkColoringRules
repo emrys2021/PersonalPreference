@@ -13,6 +13,7 @@
 @TCP Error@tcp.analysis.lost_segment || tcp.analysis.fast_retransmission || tcp.analysis.retransmission || tcp.analysis.out_of_order || tcp.analysis.duplicate_ack@[49344,32896,32896][65535,64764,40092]
 @TCP Notify@tcp.analysis.window_update || tcp.analysis.zero_window@[32896,50372,32896][65535,64764,40092]
 !@TCP Notify@tcp.analysis.bytes_in_flight@[32896,50372,32896][65535,64764,40092]
+@TLS Hello@tls.handshake.type == 1 || tls.handshake.type == 2@[61166,65535,0][4626,10023,11822]
 @Bad TCP@tcp.analysis.flags && !tcp.analysis.window_update && !tcp.analysis.keep_alive && !tcp.analysis.keep_alive_ack@[41120,41120,41120][4626,10023,11822]
 @TCP SYN/FIN@tcp.flags & 0x02 || tcp.flags.fin == 1@[41120,41120,41120][4626,10023,11822]
 @SCTP ABORT@sctp.chunk_type eq ABORT@[49344,16448,16448][65535,64764,40092]
