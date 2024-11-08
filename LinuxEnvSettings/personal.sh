@@ -79,4 +79,7 @@ fi
 # 直接在 .vimrc 文件末尾追加 'set nu'，用于默认开启行号
 echo "set nu" >> "$VIMRC"
 
-echo "设置已完成，请重新加载终端或运行 'source ~/.bashrc' 使更改生效。"
+# 在脚本末尾添加，重新加载 .bashrc，使更改在当前 shell 中生效
+source "$BASHRC"
+
+echo "设置已完成，已自动加载新的配置。"
