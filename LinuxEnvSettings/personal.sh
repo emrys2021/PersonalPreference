@@ -11,6 +11,11 @@ BOLD='\e[1m'      # 加粗
 RESET='\e[0m'     # 重置颜色
 
 # ======================
+# 定义基础变量
+# ======================
+BASHRC="$HOME/.bashrc"
+
+# ======================
 # 定义 Linux 发行版和包管理器映射
 # ======================
 declare -A PACKAGE_MANAGERS=(
@@ -154,7 +159,7 @@ install_software() {
 # ======================
 
 # ---- 安装 lsd ----
-install_software lsd lsd package
+# install_software lsd lsd package
 
 # ---- 安装 exa ----
 install_software exa exa package
@@ -162,81 +167,87 @@ install_software exa exa package
 # ---- 安装 bat ----
 install_software bat batcat package
 
+# ---- 安装 fd-find ----
+install_software fd-find fdfind package
+
 # ---- 安装 htop ----
 install_software htop htop package
 
 # ---- 安装 zoxide ----
-install_software zoxide zoxide script "curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh"
+install_software zoxide zoxide script "curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh && export PATH='$HOME/.local/bin:$PATH'"
 
 # ---- 安装 fzf（zoxide 依赖） ----
-install_software fzf fzf package
+install_software fzf fzf script "git clone --depth 1 https://github.com/junegunn/fzf.git ~/.local/fzf && yes y | ~/.local/fzf/install && ln -sf ~/.local/fzf/bin/fzf ~/.local/bin/fzf"
 
 # ---- 安装 tcping ----
-install_software tcping tcping script "wget https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_amd64.deb -O /tmp/tcping.deb && apt install -y /tmp/tcping.deb"
+#install_software tcping tcping script "wget https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping_amd64.deb -O /tmp/tcping.deb && apt install -y /tmp/tcping.deb"
 
 # ---- 安装 exa（下载可执行文件） ----
-install_software exa exa script "wget https://github.com/ogham/exa/releases/download/v0.10.1/exa-linux-x86_64-v0.10.1.zip -O /tmp/exa.zip && mkdir -p /opt/exa && unzip /tmp/exa.zip -d /opt/exa && ln -sf /opt/exa/bin/exa /usr/bin/exa"
+install_software exa exa script "wget https://github.com/ogham/exa/releases/download/v0.10.1/exa-linux-x86_64-v0.10.1.zip -O /tmp/exa.zip && unzip /tmp/exa.zip -d ~/.local/exa && ln -sf ~/.local/exa/bin/exa ~/.local/bin/exa"
+
+# # ---- 安装 tldr ----
+# install_software tldr tldr package
+
+# # ---- 安装 duf ----
+# install_software duf duf package
+
+# # ---- 安装 plocate ----
+# install_software plocate locate package
+
+# # ---- 安装 glances ----
+# install_software glances glances package
+
+# # ---- 安装 procs ----
+# install_software procs procs package
 
 # ======================
-# 配置 zoxide 初始化
+# 配置 .bashrc
 # ======================
-if command -v zoxide >/dev/null 2>&1; then
-    BASHRC="$HOME/.bashrc"
+# 通用函数：批量追加列表内容
+append_list_to_bashrc() {
+    local COMMENT="$1"  # 注释内容，用于标记代码块
+    local LIST=("${@:2}")  # 需要追加的列表内容
 
-    # ---- 添加 zoxide 的相关注释和环境设置 ----
-    if ! grep -q "# Setup zoxide" "$BASHRC"; then
-        echo -e "\n# Setup zoxide" >> "$BASHRC"
+    # 确保 .bashrc 存在
+    [ ! -f "$BASHRC" ] && touch "$BASHRC"
+
+    # 检查注释是否存在，若不存在则追加
+    if ! grep -qF "$COMMENT" "$BASHRC"; then
+        # 检查最后一行是否为空，若不为空，则添加一行空行
+        if [ -s "$BASHRC" ] && [ "$(tail -n 1 "$BASHRC")" != "" ]; then
+            echo "" >> "$BASHRC"
+        fi
+        echo -e "$COMMENT" >> "$BASHRC"
     fi
 
-    if ! grep -q "# Add zoxide binary path to PATH" "$BASHRC"; then
-        echo -e "# Add zoxide binary path to PATH" >> "$BASHRC"
-    fi
+    # 遍历列表内容并逐个检查
+    for ITEM in "${LIST[@]}"; do
+        if ! grep -qF "$ITEM" "$BASHRC"; then
+            echo "$ITEM" >> "$BASHRC"
+            echo "已添加：$ITEM"
+        else
+            echo "已存在，跳过：$ITEM"
+        fi
+    done
+}
 
-    # ---- 添加 /root/.local/bin 到 PATH ----
-    if ! grep -q "export PATH=\$PATH:/root/.local/bin" "$BASHRC"; then
-        echo -e "export PATH=\$PATH:/root/.local/bin" >> "$BASHRC"
-        echo -e "${GREEN}${BOLD}已将 /root/.local/bin 添加到 PATH，并写入 .bashrc 文件。${RESET}"
-    fi
+# ---- 设置 PATH 变量 ----
+PATH_COMMENT="# Some personal paths"
+PATH_LIST=(
+    "export PATH=\$PATH:~/.local/bin"
+)
+append_list_to_bashrc "$PATH_COMMENT" "${PATH_LIST[@]}"
 
-    # ---- 添加 zoxide 初始化命令 ----
-    if ! grep -q "zoxide init bash" "$BASHRC"; then
-        echo -e "eval \"\$(zoxide init bash)\"" >> "$BASHRC"
-        echo -e "${GREEN}${BOLD}已将 zoxide 初始化命令添加到 .bashrc 文件末尾。${RESET}"
-    fi
-fi
-
-# ======================
-# 更新 .bashrc 文件
-# 添加常用别名 (alias)
-# ======================
+# ---- 设置 aliases ---- 
+ALIAS_COMMENT="# Some personal aliases"
 ALIAS_LIST=(
-    "alias ee='exa -l'"
-    "alias ea='exa -la'"
+    "alias ee='exa -lhigS'"
+    "alias eea='exa -lahigS'"
     "alias bat='batcat'"
     "alias ll='lsd -l'"
     "alias lla='lsd -la'"
 )
-PERSONAL_ALIAS_COMMENT="# Some personal aliases"
-
-# 确保注释行存在，如果不存在则添加到文件末尾
-if ! grep -qF "$PERSONAL_ALIAS_COMMENT" "$BASHRC"; then
-    # 检查.bashrc的最后一行是否为空
-    if [ -s "$BASHRC" ] && [ "$(tail -n 1 "$BASHRC")" != "" ]; then
-        echo "" >> "$BASHRC"
-    fi
-    echo "$PERSONAL_ALIAS_COMMENT" >> "$BASHRC"
-    echo -e "${GREEN}${BOLD}已在文件末尾追加 $PERSONAL_ALIAS_COMMENT${RESET}"
-fi
-
-# 接下来统一处理 alias 的追加
-for ALIAS_LINE in "${ALIAS_LIST[@]}"; do
-    if grep -qF "$ALIAS_LINE" "$BASHRC"; then
-        echo -e "${YELLOW}${BOLD}$ALIAS_LINE 已存在于 .bashrc 中，跳过追加。${RESET}"
-    else
-        sed -i "/$PERSONAL_ALIAS_COMMENT/a $ALIAS_LINE" "$BASHRC"
-        echo -e "${GREEN}${BOLD}已在 $PERSONAL_ALIAS_COMMENT 后追加: $ALIAS_LINE${RESET}"
-    fi
-done
+append_list_to_bashrc "$ALIAS_COMMENT" "${ALIAS_LIST[@]}"
 
 # ======================
 # 更新 .vimrc 文件
@@ -263,7 +274,43 @@ for SETTING in "${VIMRC_SETTINGS[@]}"; do
 done
 
 # ======================
+# 配置 batcat
+# ======================
+ln -s $(which batcat) ~/.local/bin/bat
+
+# ======================
+# 配置 fdfind
+# ======================
+ln -s $(which fdfind) ~/.local/bin/fd
+
+# ======================
+# 配置 fzf
+# ======================
+cat << 'EOF' >> "$BASHRC"
+
+# set fzf theme
+export FZF_DEFAULT_OPTS=$FZF_DEFAULT_OPTS'
+    --color=fg:#d0d0d0,fg+:#e0e040,bg:#121212,bg+:#262626
+    --color=hl:#5f87af,hl+:#5fd7ff,info:#afaf87,marker:#87ff00
+    --color=prompt:#40e040,spinner:#af5fff,pointer:#e0e040,header:#87afaf
+    --color=border:#262626,label:#aeaeae,query:#d9d9d9
+    --border="double" --border-label="" --preview-window="border-rounded" --prompt="> "
+    --marker="+" --pointer=">" --separator="─" --scrollbar="│"
+    --height 40% --layout="reverse" --info="right"'
+export FZF_COMPLETION_TRIGGER=',,'
+EOF
+
+# ======================
+# 配置 zoxide
+# ======================
+ZOXIDE_COMMENT="# zoxide init"
+ZOXIDE_LIST=(
+    'eval "$(zoxide init bash)"'
+)
+append_list_to_bashrc "$ZOXIDE_COMMENT" "${ZOXIDE_LIST[@]}"
+
+# ======================
 # 重新加载 .bashrc 并完成
 # ======================
 source "$BASHRC"
-echo -e "${BLUE}${BOLD}设置已完成，已自动加载新的配置。${RESET}"
+echo -e "${BLUE}${BOLD}设置已完成，已自动加载新的配置。如果没生效，请手动执行 source .bashrc${RESET}"
